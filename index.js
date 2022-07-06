@@ -81,7 +81,7 @@ const showExerciceAdd = (req, res, id) => {
     .select({ username: 1, log: { duration: 1, date: 1, description: 1 } })
     .exec((err, data) => {
       if (err) return err;
-      console.log(data);
+      //console.log(data);
       res.send({
         _id: data["_id"],
         username: data.username,
@@ -103,6 +103,9 @@ const addExercices = (req, res) => {
           :new Date(req.body.date).toDateString()
           }, ()=>{ showExerciceAdd(req,res,id)}) 
  */
+  /*   console.log(req.body.date, "data reçu");
+  console.log(req.body.date== undefined|| req.body.date ==="" ? new Date().toDateString()
+          :new Date(req.body.date).toDateString(), "renvoi"); */
   users.findOne({ _id: id }).updateOne(
     {
       $push: {
@@ -110,7 +113,7 @@ const addExercices = (req, res) => {
           description: req.body.description,
           duration: req.body.duration,
           date:
-            req.body.date === ""
+            req.body.date == undefined || req.body.date === ""
               ? new Date().toDateString()
               : new Date(req.body.date).toDateString(),
         },
@@ -121,13 +124,44 @@ const addExercices = (req, res) => {
     }
   );
 };
-//Vous pouvez faire une GETdemande pour /api/users/:_id/logsrécupérer un journal d'exercice complet de n'importe quel utilisateur.
-//Une demande au journal d' GET /api/users/:_id/logs un utilisateur renvoie un objet utilisateur avec une count propriété représentant le nombre d'exercices appartenant à cet utilisateur.
-//Une GETrequête /api/users/:id/logs renverra l'objet utilisateur avec un logtableau de tous les exercices ajoutés.
 
 const getLogs = (req, res) => {
   const id = req.params["_id"];
-  users.find({ _id: id }, (req, res) => {});
+  users
+    .findOne({ _id: id })
+    .select({ username: 1, log: { duration: 1, description: 1, date: 1 } })
+
+    .exec((err, data) => {
+      if (err) return err;
+      // count en plus
+      data._doc.count = data.log.length;
+      data._doc.log = filterLog(data, req);
+      res.send(data);
+      // ou
+      /*         res.send({
+          username : data.username,
+          _id : data._id,
+          count : data.log.length,
+          log : data.log
+        }); */
+    });
+};
+
+const filterLog = (data, req) => {
+  let log = [...data.log];
+  if (req.query.from !== undefined) {
+    const from = +new Date(req.query.from);
+    log = log.filter((oneLog) => new Date(oneLog.date).getTime() >= from);
+  }
+  if (req.query.to !== undefined) {
+    const to = +new Date(req.query.to);
+    log = log.filter((oneLog) => new Date(oneLog.date).valueOf() <= to);
+  }
+  if (req.query.limit !== undefined) {
+    const limit = parseInt(req.query.limit);
+    log = log.slice(0, limit);
+  }
+  return log;
 };
 
 // liste post
