@@ -72,7 +72,6 @@ const getUsers = async (req, res) => {
 // usernam description duration date
 // log[]
 // id username log[]
-//[]
 
 const showExerciceAdd = (req, res, id) => {
   users
